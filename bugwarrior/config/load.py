@@ -11,8 +11,8 @@ from . import data, schema
 BUGWARRIORRC = "BUGWARRIORRC"
 
 
-def configure_logging(logfile, loglevel):
-    logging.basicConfig(filename=logfile, level=loglevel)
+def configure_logging(logfile, loglevel, logformat):
+    logging.basicConfig(filename=logfile, level=loglevel, format=logformat)
 
     # In general, its nice to log "everything", but some of the loggers from
     # our dependencies are very very spammy.  Here, we silence most of their
@@ -72,7 +72,8 @@ def load_config(main_section, interactive, quiet):
     main_config.data = data.BugwarriorData(
         data.get_data_path(config[main_section].taskrc))
     configure_logging(main_config.log__file,
-                      'WARNING' if quiet else main_config.log__level)
+                      'WARNING' if quiet else main_config.log__level,
+                      logformat="%(asctime)s %(levelname)s %(threadName)s %(name)s %(message)s") # TODO: read from config
     return config
 
 

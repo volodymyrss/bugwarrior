@@ -505,4 +505,4 @@ def aggregate_issues(conf, main_section, debug):
             continue
         yield issue
 
-    log.info("Done aggregating remote issues.")
+    log.warning("Done aggregating remote issues!")

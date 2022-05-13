@@ -293,6 +293,8 @@ def run_hooks(pre_import):
 
 
 def synchronize(issue_generator, conf, main_section, dry_run=False):
+    log.warning("synchronize")
+
     main_config = conf[main_section]
 
     targets = main_config.targets.copy()
@@ -327,6 +329,7 @@ def synchronize(issue_generator, conf, main_section, dry_run=False):
 
     issue_map = {}  # unique identifier -> issue dict
     for issue in issue_generator:
+        log.info("issue: %s", issue)
 
         try:
             issue_dict = dict(issue)
@@ -349,7 +352,10 @@ def synchronize(issue_generator, conf, main_section, dry_run=False):
             issue_map[unique_identifier] = issue_dict
 
     seen_uuids = set()
-    for issue_dict in issue_map.values():
+    for issue_i, issue_dict in enumerate(issue_map.values()):
+
+        for k, v in issue_dict.items():
+            log.debug("issue (%d/%d) %s : %s", issue_i, len(issue_map), k, v)
 
         # We received this issue from The Internet, but we're not sure what
         # kind of encoding the service providers may have handed us. Let's try
@@ -368,12 +374,15 @@ def synchronize(issue_generator, conf, main_section, dry_run=False):
             issue_dict['priority'] = None
 
         try:
+            log.info("to find_taskwarrior_uuid")
             existing_taskwarrior_uuid = find_taskwarrior_uuid(tw, key_list, issue_dict)
+            log.info("done find_taskwarrior_uuid")
         except MultipleMatches as e:
             log.exception("Multiple matches: %s", str(e))
         except NotFound:  # Create new task
             issue_updates['new'].append(issue_dict)
-        else:  # Update existing task.
+        else:
+            # Update existing task.
             seen_uuids.add(existing_taskwarrior_uuid)
             _, task = tw.get_task(uuid=existing_taskwarrior_uuid)
 
@@ -486,7 +495,9 @@ def synchronize(issue_generator, conf, main_section, dry_run=False):
         updates = (len(issue_updates['new']) +
                    len(issue_updates['changed']) +
                    len(issue_updates['closed']))
+        log.info("sending notifications for %s updates", updates)
         if not conf['notifications'].only_on_new_tasks or updates > 0:
+            log.info("notifications approved")
             send_notification(
                 dict(
                     description="New: %d, Changed: %d, Completed: %d" % (
@@ -498,6 +509,8 @@ def synchronize(issue_generator, conf, main_section, dry_run=False):
                 'bw_finished',
                 conf['notifications'],
             )
+
+    log.info("done synchronozing")
 
 
 def build_key_list(targets):
